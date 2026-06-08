@@ -1,0 +1,33 @@
+name: scrobot-scan
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      max_firms:
+        description: "Ile firm na ten run"
+        default: "1500"
+concurrency:
+  group: scrobot-scan
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan KRS shard ${{ matrix.shard }}
+        env:
+          PANEL_BASE: ${{ secrets.PANEL_BASE }}
+          CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+          BATCH: "400"
+          MAX_FIRMS: ${{ github.event.inputs.max_firms || '1500' }}
+          DELAY: "0.8"
+        run: python scan_worker.py
